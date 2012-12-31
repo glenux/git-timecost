@@ -1,0 +1,242 @@
+#!/usr/bin/env ruby
+# vim: set syntax=ruby ts=4 sw=4 noet :
+
+require 'pp'
+require 'date'
+require 'optparse'
+
+class GitExtractor
+
+	class Commit
+		attr_accessor :author, :commit, :date, :note
+		def initialize commit
+			@commit = commit
+			@note = nil
+			@author = nil
+			@date = nil
+		end
+
+	end
+
+	class Range
+		attr_accessor :time_start, :time_stop, :commits
+
+		def initialize commit
+			@time_stop = DateTime.parse(commit.date)
+			@time_start = @time_stop - (1.5 / 24.0)
+			@commits = [commit]
+			self
+		end
+
+		def merge range
+			#  B -----[----]----
+			#  A  --[----]------
+			#  = ---[------]----
+			
+			# minimum of both
+			new_start = if range.time_start < @time_start then range.time_start
+						else @time_start
+						end
+
+			new_end = if range.time_stop >= @time_stop then range.time_stop
+					  else @time_stop
+					  end
+
+			@time_start = new_start
+			@time_stop = new_end
+			@commits.concat range.commits
+		end
+
+		def overlap? range
+			result = false
+
+			# Ref ----[----]-----
+			# overlapping :
+			#  A  -[----]--------
+			#  B  -------[----]--
+			#  C  -[----------]--
+			#  D  ------[]-------
+			# non-overlapping : 
+			#  E  -[]------------
+			#  F  -----------[]--
+			
+			start_before_start = (range.time_start < @time_start)
+			start_after_start = (range.time_start >= @time_start)
+			start_after_stop = (range.time_start >= @time_stop)
+			start_before_stop = (range.time_start < @time_stop) 
+
+			stop_before_stop = (range.time_stop < @time_stop)
+			stop_after_stop = (range.time_stop >= @time_stop)
+			stop_before_start = (range.time_stop < @time_start)
+			stop_after_start = (range.time_stop >= @time_start)
+
+
+			# A case
+			if start_before_start and start_before_stop and
+				stop_after_start and stop_before_stop then
+				result = true
+			end
+
+			# B case
+			if start_after_start and start_before_stop and
+				stop_after_start and stop_after_stop then
+				result = true
+			end
+
+			# C case
+			if start_before_start and start_before_stop and
+				stop_after_start and stop_after_stop then
+				result = true
+			end
+			
+			# D case
+			if start_after_start and start_before_stop and
+				stop_after_start and stop_before_stop then
+				result = true
+			end
+
+			return result
+		end
+
+		def fixed_start 
+			return @time_start + (0.5/24.0)
+		end
+
+		def diff 
+			return ("%.2f" % ((@time_stop - fixed_start).to_f * 24)).to_f
+		end
+
+		def to_s 
+			val = "(%s) %s - %s\n" % [diff, fixed_start, @time_stop]	
+			@commits.each do |commit|
+				r = "\t* " + commit.author + "\n" 
+				r += commit.note.split(/\n/).map{ |s| "\t  %s" % s }.join "\n"
+				val += r + "\n"
+			end
+			return val
+		end
+	end
+
+	class RangeList
+		def initialize
+			@ranges = []
+		end
+
+		def add range
+			merged = false
+
+			# merge
+			@ranges.each do |old|
+				#pp old
+				if old.overlap? range then
+					old.merge range
+					merged = true
+				end
+			end
+
+
+			# add if needed
+			if not merged then
+				@ranges.push range
+			end
+		end
+
+		def sum
+			result = 0
+			@ranges.each do |r|
+				result += r.diff
+			end
+			return result
+		end
+	end
+
+
+	def initialize
+		# FIXME: accept multiple authors
+		@config = {
+			:author_filter => ".*?",
+			:verbose => false
+		}
+		@rangelist = nil
+	end
+
+	def parse_cmdline args
+		OptionParser.new do |opts|
+			opts.banner = "Usage: #{File.basename $0} [options]"
+
+			opts.on("-v","--verbose", "Run verbosely") do |v|
+				@config[:verbose] = true
+			end
+
+			opts.on("-a","--author AUTHOR", "Only keep commits for AUTHOR") do |author|
+				@config[:author_filter] = author
+			end
+		end
+	end
+
+	def exec
+		# git log
+		# foreach, create time range (before) + logs
+		process = IO.popen ["git", "log", "--date=iso"]
+
+		@rangelist = RangeList.new
+		commit = nil
+		loop do
+			line = process.gets
+			break if line.nil?
+			line.strip!
+
+			case line
+			when /^commit (.*)$/ then
+				id = $1
+				# merge ranges & push
+				unless commit.nil? then
+					range = GitExtract::Range.new commit
+					rangelist.add range
+				end
+				commit = Commit.new id
+				#puts "commit #{id}"
+
+			when /^Author:\s*(.*?)\s*$/ then
+				break if commit.nil? 
+				commit.author = $1 
+
+				if not commit.author =~ /#{@config[:author_filter]}/ then
+					commit = nil
+					# reject
+				end
+
+			when /^Date:\s*(.*?)\s*$/ then
+				break if commit.nil? 
+				commit.date = $1
+
+			when /^\s*$/ then
+				# skip
+
+			else 
+				break if commit.nil? 
+				# add as note
+				commit.note = if commit.note.nil? then line
+							  else commit.note + "\n" + line
+							  end
+			end
+
+			def exec
+			end
+		end
+
+	end
+
+	def report
+		pp @rangelist
+		puts "SUM: %s" % @rangelist.sum
+		exit 0
+	end
+end
+
+
+app = GitExtractor.new
+app.parse_cmdline ARGV
+app.exec
+app.report
+
