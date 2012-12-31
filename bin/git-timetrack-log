@@ -21,7 +21,8 @@ class GitExtractor
 	class Range
 		attr_accessor :time_start, :time_stop, :commits
 
-		def initialize commit
+		def initialize config, commit
+			@config = config
 			@time_stop = DateTime.parse(commit.date)
 			@time_start = @time_stop - (1.5 / 24.0)
 			@commits = [commit]
@@ -109,8 +110,13 @@ class GitExtractor
 		def to_s 
 			val = "(%s) %s - %s\n" % [diff, fixed_start, @time_stop]	
 			@commits.each do |commit|
-				r = "\t* " + commit.author + "\n" 
-				r += commit.note.split(/\n/).map{ |s| "\t  %s" % s }.join "\n"
+				lines = []
+				unless @config[:author_filter_enable] then
+					lines.push commit.author
+				end
+				lines.concat commit.note.split(/\n/)
+				r = lines.map{ |s| "\t  %s" % s }.join "\n"
+				r[1] = '*'
 				val += r + "\n"
 			end
 			return val
@@ -141,6 +147,12 @@ class GitExtractor
 			end
 		end
 
+		def each 
+			@ranges.each do |r|
+				yield r
+			end
+		end
+
 		def sum
 			result = 0
 			@ranges.each do |r|
@@ -154,6 +166,7 @@ class GitExtractor
 	def initialize
 		# FIXME: accept multiple authors
 		@config = {
+			:author_filter_enable => false,
 			:author_filter => ".*?",
 			:verbose => false
 		}
@@ -161,20 +174,30 @@ class GitExtractor
 	end
 
 	def parse_cmdline args
-		OptionParser.new do |opts|
+		opts = OptionParser.new do |opts|
 			opts.banner = "Usage: #{File.basename $0} [options]"
 
-			opts.on("-v","--verbose", "Run verbosely") do |v|
+			opts.on_tail("-v","--verbose", "Run verbosely") do |v|
 				@config[:verbose] = true
 			end
 
+			opts.on_tail("-h","--help", "Show this help") do
+				puts opts
+				exit 0
+			end
+
 			opts.on("-a","--author AUTHOR", "Only keep commits for AUTHOR") do |author|
+				puts "set commit author to #{author}"
 				@config[:author_filter] = author
+				@config[:author_filter_enable] = true
 			end
 		end
+		opts.parse! args
+
 	end
 
-	def exec
+
+	def analyze
 		# git log
 		# foreach, create time range (before) + logs
 		process = IO.popen ["git", "log", "--date=iso"]
@@ -191,34 +214,37 @@ class GitExtractor
 				id = $1
 				# merge ranges & push
 				unless commit.nil? then
-					range = GitExtract::Range.new commit
-					rangelist.add range
+					range = Range.new @config, commit
+					@rangelist.add range
 				end
 				commit = Commit.new id
 				#puts "commit #{id}"
 
 			when /^Author:\s*(.*?)\s*$/ then
-				break if commit.nil? 
-				commit.author = $1 
+				unless commit.nil? then
+					commit.author = $1 
 
-				if not commit.author =~ /#{@config[:author_filter]}/ then
-					commit = nil
-					# reject
+					if not commit.author =~ /#{@config[:author_filter]}/ then
+						commit = nil
+						# reject
+					end
 				end
 
 			when /^Date:\s*(.*?)\s*$/ then
-				break if commit.nil? 
-				commit.date = $1
+				unless commit.nil? then
+					commit.date = $1
+				end
 
 			when /^\s*$/ then
 				# skip
 
 			else 
-				break if commit.nil? 
 				# add as note
-				commit.note = if commit.note.nil? then line
-							  else commit.note + "\n" + line
-							  end
+				unless commit.nil? then
+					commit.note = if commit.note.nil? then line
+								  else commit.note + "\n" + line
+								  end
+				end
 			end
 
 			def exec
@@ -228,8 +254,10 @@ class GitExtractor
 	end
 
 	def report
-		pp @rangelist
-		puts "SUM: %s" % @rangelist.sum
+		@rangelist.each do |r|
+			puts r.to_s + "\n"
+		end
+		puts "TOTAL: %.2f hours" % @rangelist.sum
 		exit 0
 	end
 end
@@ -237,6 +265,6 @@ end
 
 app = GitExtractor.new
 app.parse_cmdline ARGV
-app.exec
+app.analyze
 app.report
 
