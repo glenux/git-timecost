@@ -168,6 +168,10 @@ class GitExtractor
 		@config = {
 			:author_filter_enable => false,
 			:author_filter => ".*?",
+
+			:date_filter_enable => false,
+			:date_filter => ".*?",
+
 			:verbose => false
 		}
 		@rangelist = nil
@@ -186,8 +190,21 @@ class GitExtractor
 				exit 0
 			end
 
-			opts.on("-a","--author AUTHOR", "Only keep commits for AUTHOR") do |author|
-				puts "set commit author to #{author}"
+			opts.on("-d","--date DATE", "Keep only commits since DATE") do |date|
+				puts "set date filter to #{date}"
+				@config[:date_filter] = DateTime.parse(date);
+				@config[:date_filter_enable] = true
+			end
+
+			opts.on("-t","--time TIME", "Keep only commits on last TIME datys") do |time|
+				puts "set time filter to latest #{time} days"
+				@config[:date_filter] = DateTime.now - time.to_f;
+				puts "set date filter to date = #{@config[:date_filter]}"
+				@config[:date_filter_enable] = true
+			end
+
+			opts.on("-a","--author AUTHOR", "Keep only commits by AUTHOR") do |author|
+				puts "set author filter to #{author}"
 				@config[:author_filter] = author
 				@config[:author_filter_enable] = true
 			end
@@ -224,7 +241,8 @@ class GitExtractor
 				unless commit.nil? then
 					commit.author = $1 
 
-					if not commit.author =~ /#{@config[:author_filter]}/ then
+					if @config[:author_filter_enable] and 
+						(not commit.author =~ /#{@config[:author_filter]}/) then
 						commit = nil
 						# reject
 					end
@@ -233,6 +251,12 @@ class GitExtractor
 			when /^Date:\s*(.*?)\s*$/ then
 				unless commit.nil? then
 					commit.date = $1
+
+					if @config[:date_filter_enable] and 
+						(DateTime.parse(commit.date) < @config[:date_filter]) then
+						commit = nil
+						# reject
+					end
 				end
 
 			when /^\s*$/ then
