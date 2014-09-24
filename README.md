@@ -1,8 +1,7 @@
 TimeCost for Git
 ================
 
-Use git logs to give an estimation of spent time on your projects.
-
+Use git logs to give an estimation of spent time & costs of your projects.
 
 Installation
 ------------
