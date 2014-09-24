@@ -6,8 +6,9 @@ Use git logs to give an estimation of spent time & costs of your projects.
 Installation
 ------------
 
-* Clone the project somewhere
-* Copy the ''bin/git-timecost'' file in ''/usr/local/bin''
+Install the project with:
+
+    $ gem install timecost
 
 Usage
 -----
@@ -45,3 +46,11 @@ For other possibilities
 $ git timecost -h
 ```
 
+Contributing
+------------
+
+1. Fork it ( https://github.com/[my-github-username]/timecost/fork )
+2. Create your feature branch (`git checkout -b my-new-feature`)
+3. Commit your changes (`git commit -am 'Add some feature'`)
+4. Push to the branch (`git push origin my-new-feature`)
+5. Create a new Pull Request
