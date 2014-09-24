@@ -17,6 +17,7 @@ module TimeCost
 				:verbose => false
 			}
 			@rangelist = nil
+			@authorlist = nil
 		end
 
 		def parse_cmdline args
