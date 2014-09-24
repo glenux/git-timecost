@@ -1,10 +1,15 @@
 
 module TimeCost
 	class Range
-		attr_accessor :time_start, :time_stop, :commits
+		attr_accessor :time_start, :time_stop, :commits, :author
 
 		def initialize config, commit
 			@config = config
+
+			# FIXME: First approximation for users
+			# later, we'll replace with @user = User.parse(commit.author)
+			@author = commit.author
+
 			@time_stop = DateTime.parse(commit.date)
 			@time_start = @time_stop - (@config[:range_granularity] * 3 / 24.0)
 			@commits = [commit]
@@ -33,6 +38,9 @@ module TimeCost
 		def overlap? range
 			result = false
 
+			# return early result if ranges come from different authors
+			return false if (@author != range.author)
+
 			# Ref ----[----]-----
 			# overlapping :
 			#  A  -[----]--------
@@ -52,7 +60,6 @@ module TimeCost
 			stop_after_stop = (range.time_stop >= @time_stop)
 			stop_before_start = (range.time_stop < @time_start)
 			stop_after_start = (range.time_stop >= @time_start)
-
 
 			# A case
 			if start_before_start and start_before_stop and
@@ -105,3 +112,4 @@ module TimeCost
 		end
 	end
 end
+
