@@ -16,7 +16,7 @@ module TimeCost
 
 				:verbose => false
 			}
-			@rangelist = nil
+			@rangelist = {}
 			@authorlist = nil
 		end
 
@@ -81,7 +81,7 @@ module TimeCost
 					   "--","."]
 
 
-			@rangelist = RangeList.new
+			@rangelist = {}
 			commit = nil
 			loop do
 				line = process.gets
@@ -96,7 +96,11 @@ module TimeCost
 					# merge ranges & push
 					unless commit.nil? then
 						range = Range.new @config, commit
-						@rangelist.add range
+
+						if not @rangelist.include? commit.author then
+							@rangelist[commit.author] = RangeList.new
+						end
+						@rangelist[commit.author].add range
 					end
 					commit = Commit.new id
 					# puts "commit #{id}"
@@ -110,6 +114,7 @@ module TimeCost
 							commit = nil
 							# reject
 						end
+
 					end
 
 				when /^Date:\s*(.*?)\s*$/ then
@@ -170,10 +175,17 @@ module TimeCost
 		def report
 			return if not @config[:output_dump].nil?
 
-			@rangelist.each do |r|
-				puts r.to_s + "\n"
+			@rangelist.each do |author,rangelist|
+				rangelist.each do |range|
+					puts range.to_s + "\n"
+				end
 			end
-			puts "TOTAL: %.2f hours" % @rangelist.sum
+			total = 0
+			@rangelist.each do |author,rangelist|
+				puts "SUB-TOTAL for %s: %.2f hours\n" % [author, rangelist.sum]
+				total += rangelist.sum
+			end
+			puts "TOTAL: %.2f hours" % total
 		end
 	end
 end

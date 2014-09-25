@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["glenux@glenux.net"]
   spec.summary       = %q{Use GIT logs to give an estimation of spent time & costs of your projects.}
   spec.description   = %q{Use GIT logs to give an estimation of spent time & costs of your projects.}
-  spec.homepage      = "https//github.com/glenux/git-timecost"
+  spec.homepage      = "https://github.com/glenux/git-timecost"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0")

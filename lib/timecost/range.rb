@@ -97,12 +97,12 @@ module TimeCost
 		end
 
 		def to_s 
-			val = "(%s) %s - %s\n" % [diff, fixed_start, @time_stop]	
+			val = "(%s)\t%s - %s\n" % [diff, fixed_start, @time_stop]	
+			unless @config[:author_filter_enable] then
+				val += "\tby %s\n" % @commits.first.author
+			end
 			@commits.each do |commit|
 				lines = []
-				unless @config[:author_filter_enable] then
-					lines.push commit.author
-				end
 				lines.concat commit.note.split(/\n/)
 				r = lines.map{ |s| "\t  %s" % s }.join "\n"
 				r[1] = '*'
