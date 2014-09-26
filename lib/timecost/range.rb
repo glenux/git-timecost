@@ -3,15 +3,17 @@ module TimeCost
 	class Range
 		attr_accessor :time_start, :time_stop, :commits, :author
 
-		def initialize config, commit
-			@config = config
+		GRANULARITY_DEFAULT = 0.5
+
+		def initialize commit, options = {}
+			@granularity = options[:granularity] || GRANULARITY_DEFAULT
 
 			# FIXME: First approximation for users
 			# later, we'll replace with @user = User.parse(commit.author)
 			@author = commit.author
 
 			@time_stop = DateTime.parse(commit.date)
-			@time_start = @time_stop - (@config[:range_granularity] * 3 / 24.0)
+			@time_start = @time_stop - (@granularity * 3 / 24.0)
 			@commits = [commit]
 			self
 		end
@@ -89,16 +91,16 @@ module TimeCost
 		end
 
 		def fixed_start 
-			return @time_start + (@config[:range_granularity]/24.0)
+			return @time_start + (@granularity/24.0)
 		end
 
 		def diff 
 			return ("%.2f" % ((@time_stop - fixed_start).to_f * 24)).to_f
 		end
 
-		def to_s 
+		def to_s show_authors = true
 			val = "(%s)\t%s - %s\n" % [diff, fixed_start, @time_stop]	
-			unless @config[:author_filter_enable] then
+			if show_authors  then
 				val += "\tby %s\n" % @commits.first.author
 			end
 			@commits.each do |commit|

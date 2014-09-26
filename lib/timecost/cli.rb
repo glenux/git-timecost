@@ -95,7 +95,7 @@ module TimeCost
 					id = $1
 					# merge ranges & push
 					unless commit.nil? then
-						range = Range.new @config, commit
+						range = Range.new commit, granularity: @config[:range_granularity]
 
 						if not @rangelist.include? commit.author then
 							@rangelist[commit.author] = RangeList.new
@@ -177,7 +177,7 @@ module TimeCost
 
 			@rangelist.each do |author,rangelist|
 				rangelist.each do |range|
-					puts range.to_s + "\n"
+					puts range.to_s(!@config[:author_filter_enable]) + "\n"
 				end
 			end
 			total = 0

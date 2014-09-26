@@ -6,7 +6,6 @@ require 'date'
 require 'optparse'
 require 'yaml'
 
-$:.insert 0, 'lib'
 require 'timecost'
 
 app = TimeCost::CLI.new
