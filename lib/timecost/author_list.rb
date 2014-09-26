@@ -30,5 +30,9 @@ module TimeCost
 		def parse author
 			return @author_to_id[author]
 		end
+
+		def size
+			return @author_to_id.keys.size
+		end
 	end
 end
