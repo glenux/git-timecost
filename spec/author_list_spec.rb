@@ -32,6 +32,19 @@ describe TimeCost::AuthorList do
 		end
 	end
 
+	describe '.size' do 
+		it "must be zero in the beginning" do
+			assert_equal list.size, 0
+		end
+
+		it "must grow while adding authors" do
+			list.add first
+			assert_equal list.size, 1
+			list.add second
+			assert_equal list.size, 2
+		end
+	end
+
 	describe '.alias' do
 		it "must accept aliases for authors" do 
 			assert_respond_to list, :alias
