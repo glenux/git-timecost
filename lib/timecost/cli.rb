@@ -7,7 +7,9 @@ module TimeCost
 				:author_filter => ".*?",
 
 				:date_filter_enable => false,
-				:date_filter => ".*?",
+				:date_filter => [],
+
+				:branches_filter_enable => true,
 
 				:input_dump => [],
 				:output_dump => nil,
@@ -21,7 +23,7 @@ module TimeCost
 		end
 
 		def parse_cmdline args
-			opts = OptionParser.new do |opts|
+			options = OptionParser.new do |opts|
 				opts.banner = "Usage: #{File.basename $0} [options]"
 
 				opts.on_tail("-v","--verbose", "Run verbosely") do |v|
@@ -33,6 +35,7 @@ module TimeCost
 					exit 0
 				end
 
+
 				opts.on("-i","--input FILE", "Set input dump file") do |file|
 					@config[:input_dump] << file
 				end
@@ -41,13 +44,23 @@ module TimeCost
 					@config[:output_dump] = file
 				end
 
-				opts.on("-d","--date DATE", "Keep only commits since DATE") do |date|
-					puts "set date filter to #{date}"
-					@config[:date_filter] = DateTime.parse(date);
+				opts.on("--before DATE", "Keep only commits before DATE") do |date|
+					puts "set date filter to <= #{date}"
+					@config[:date_filter] << lambda { |other|
+						return (other <= DateTime.parse(date))
+					}
 					@config[:date_filter_enable] = true
 				end
 
-				opts.on("-t","--time TIME", "Keep only commits on last TIME datys") do |time|
+				opts.on("--after DATE", "Keep only commits after DATE") do |date|
+					puts "set date filter to >= #{date}"
+					@config[:date_filter] << lambda { |other|
+						return (other >= DateTime.parse(date))
+					}
+					@config[:date_filter_enable] = true
+				end
+
+				opts.on("-t","--time TIME", "Keep only commits on last TIME days") do |time|
 					puts "set time filter to latest #{time} days"
 					@config[:date_filter] = DateTime.now - time.to_f;
 					puts "set date filter to date = #{@config[:date_filter]}"
@@ -60,6 +73,10 @@ module TimeCost
 					@config[:author_filter_enable] = true
 				end
 
+				opts.on_tail("--all", "Collect from all branches and refs") do
+					@config[:branches_filter_enable] = false
+				end
+
 				# overlap : 
 				#
 				opts.on("-s","--scotch GRANULARITY", "Use GRANULARITY (decimal hours) to merge ranges") do |granularity|
@@ -67,7 +84,7 @@ module TimeCost
 					@config[:range_granularity] = granularity.to_f
 				end
 			end
-			opts.parse! args
+			options.parse! args
 
 		end
 
@@ -75,11 +92,17 @@ module TimeCost
 		def analyze_git
 			# git log
 			# foreach, create time range (before) + logs
-			process = IO.popen ["git", "log", 
-					   "--date=iso", 
-					   "--no-patch",
-					   "--","."]
 
+			cmd = [
+				"git", "log",
+		   		"--date=iso", 
+		   		"--no-patch"
+			]
+			if not @config[:branches_filter_enable] then  
+				cmd << "--all"
+			end
+			cmd.concat ["--", "."]
+			process = IO.popen cmd
 
 			@rangelist = {}
 			commit = nil
@@ -121,10 +144,15 @@ module TimeCost
 					unless commit.nil? then
 						commit.date = $1
 
-						if @config[:date_filter_enable] and 
-							(DateTime.parse(commit.date) < @config[:date_filter]) then
+						# reject if a some filter does not validate date
+						filter_keep = true
+						filters = @config[:date_filter]
+						filters.each do |f|
+							filter_keep &= f.call(DateTime.parse(commit.date))
+						end
+
+						if not filter_keep then
 							commit = nil
-							# reject
 						end
 					end
 
