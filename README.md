@@ -8,7 +8,7 @@ Installation
 
 Install the project with:
 
-    $ gem install timecost
+    gem install timecost
 
 Usage
 -----
@@ -32,8 +32,8 @@ TOTAL: 3.36 hours
 To get the time spent on your project since a given date
 
 ```
-$ git timecost -d 2013-03-01
-set date filter to 2013-03-01
+$ git timecost --after 2013-03-01
+set date filter to >= 2013-03-01
 (1.0) 2013-09-23T13:02:39+02:00 - 2013-09-23T14:02:39+02:00
         * Glenn Y. Rolland <glenux@glenux.net>
           Add support for import / export / merge of ranges.
@@ -42,15 +42,16 @@ TOTAL: 1.00 hours
 ```
 
 For other possibilities
-```
-$ git timecost -h
-```
+
+    git timecost -h
+
 
 Contributing
 ------------
 
-1. Fork it ( https://github.com/[my-github-username]/timecost/fork )
+1. Fork it ( https://github.com/glenux/timecost/fork )
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
+
