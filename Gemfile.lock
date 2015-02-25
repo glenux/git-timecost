@@ -1,0 +1,19 @@
+PATH
+  remote: .
+  specs:
+    timecost (0.2.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    minitest (4.7.5)
+    rake (10.1.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  bundler (~> 1.6)
+  minitest (~> 4.7.5)
+  rake (~> 10.0)
+  timecost!

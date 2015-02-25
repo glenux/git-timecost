@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+# vim: set syntax=ruby ts=4 sw=4 noet :
+
+require 'pp'
+require 'date'
+require 'optparse'
+require 'yaml'
+
+require 'timecost'
+
+app = TimeCost::CLI.new
+app.parse_cmdline ARGV
+app.analyze
+app.export
+app.report
+#app.report_ranges
+#app.report_users
+
+exit 0
+
