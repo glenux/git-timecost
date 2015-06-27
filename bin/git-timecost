@@ -5,6 +5,7 @@ require 'pp'
 require 'date'
 require 'optparse'
 require 'yaml'
+require 'active_record'
 
 require 'timecost'
 

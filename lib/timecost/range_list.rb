@@ -1,5 +1,6 @@
 
 module TimeCost
+	# Track = a list of range (for a given user)
 	class RangeList
 		def initialize
 			@ranges = []

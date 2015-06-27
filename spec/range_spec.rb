@@ -21,11 +21,38 @@ describe TimeCost::Range do
 		end
 	end
 
+	# Ref ----[----]-----
+	# overlapping :
+	#  A  -[----]--------
+	#  B  -------[----]--
+	#  C  -[----------]--
+	#  D  ------[]-------
+	# non-overlapping : 
+	#  E  -[]------------
+	#  F  -----------[]--
 	describe '.overlap?' do
 		it "must respond to .overlap?" do
 		end
 
 		it "must return false when ranges are not overlapping" do
+			# rangeRef = RangeV2.new
+			# rangeA = RangeV2.new ...
+			# FIXME: test rangeRef + rangeA
+			#
+			# rangeB = RangeV2.new
+			# FIXME: test rangeRef + rangeB
+			#
+			# rangeC = RangeV2.new
+			# FIXME: test rangeRef + rangeC
+			#
+			# rangeD = RangeV2.new
+			# FIXME: test rangeRef + rangeD
+			#
+			# rangeE = RangeV2.new
+			# FIXME: test rangeRef + rangeE
+			#
+			# rangeF = RangeV2.new
+			# FIXME: test rangeRef + rangeF
 		end
 
 		it "must return true when ranges are overlapping" do

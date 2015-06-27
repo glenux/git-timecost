@@ -1,4 +1,5 @@
 
+require 'timecost/db'
 require 'timecost/commit'
 require 'timecost/range'
 require 'timecost/author_list'
