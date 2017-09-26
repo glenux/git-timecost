@@ -174,12 +174,18 @@ module TimeCost
 
 		def analyze_dumps
 			#read ranges
-			@rangelist = RangeList.new
 
 			@config[:input_dump].each do |filename|
-				rangelist = YAML::load(File.open(filename,"r"))
-				rangelist.each do |range|
-					@rangelist.add range
+			  filelists = YAML::load(File.open(filename,"r"))
+				# require 'pry'
+				# binding.pry
+				filelists.each do |author, rangelist|
+				  # create list if author is new
+			    @rangelist[author] ||= RangeList.new
+
+				  rangelist.each do |range|
+					  @rangelist[author].add range
+					end
 				end
 			end
 		end
